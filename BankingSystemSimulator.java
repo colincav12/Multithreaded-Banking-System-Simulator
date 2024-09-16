@@ -150,13 +150,13 @@ class BankAccount {
         this.balance = initialBalance;
     }
 
-    public synchronized void deposit(int amount) {
+    public void deposit(int amount) {
         System.out.println("Depositing $" + amount);
         balance += amount;
         System.out.println("Deposit complete. New balance: $" + balance);
     }
 
-    public synchronized void withdraw(int amount) {
+    public void withdraw(int amount) {
         if (balance >= amount) {
             System.out.println("Withdrawing $" + amount);
             balance -= amount;
@@ -166,7 +166,7 @@ class BankAccount {
         }
     }
 
-    public synchronized int getBalance() {
+    public  int getBalance() {
         return balance;
     }
 }
