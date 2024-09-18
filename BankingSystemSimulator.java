@@ -2,6 +2,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.List;
 
 public class BankingSystemSimulator {
     public static void main(String[] args) {
@@ -10,7 +12,7 @@ public class BankingSystemSimulator {
         frame.setSize(500, 400);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(8, 2));
+        panel.setLayout(new GridLayout(9, 2));
 
         // Create labels and input fields
         JLabel accountLabel = new JLabel("Select Account (1, 2, or 3):");
@@ -20,8 +22,9 @@ public class BankingSystemSimulator {
         JTextField amountField = new JTextField();
 
         // Create buttons
-        JButton depositButton = new JButton("Deposit");
-        JButton withdrawButton = new JButton("Withdraw");
+        JButton depositButton = new JButton("Add Deposit to Pending");
+        JButton withdrawButton = new JButton("Add Withdraw to Pending");
+        JButton confirmButton = new JButton("Confirm All Transactions");
         JButton balanceButton = new JButton("Check Balance");
 
         // Message display
@@ -34,6 +37,7 @@ public class BankingSystemSimulator {
         panel.add(amountField);
         panel.add(depositButton);
         panel.add(withdrawButton);
+        panel.add(confirmButton);
         panel.add(balanceButton);
         panel.add(statusLabel);
 
@@ -45,69 +49,72 @@ public class BankingSystemSimulator {
         BankAccount account2 = new BankAccount(1000);
         BankAccount account3 = new BankAccount(1000);
 
-        // Add action listener for deposit
+        // A list to store pending transactions
+        List<Runnable> pendingTransactions = new ArrayList<>();
+
+        // Add action listener for deposit (add to pending)
         depositButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 try {
                     int accountNum = Integer.parseInt(accountField.getText());
                     int amount = Integer.parseInt(amountField.getText());
 
-                    Thread depositThread = new Thread(new Runnable() {
-                        public void run() {
-                            if (accountNum == 1) {
-                                account1.deposit(amount);
-                                statusLabel.setText("Deposited $" + amount + " into Account 1. Current balance: $"
-                                        + account1.getBalance());
-                            } else if (accountNum == 2) {
-                                account2.deposit(amount);
-                                statusLabel.setText("Deposited $" + amount + " into Account 2. Current balance: $"
-                                        + account2.getBalance());
-                            } else if (accountNum == 3) {
-                                account3.deposit(amount);
-                                statusLabel.setText("Deposited $" + amount + " into Account 3. Current balance: $"
-                                        + account3.getBalance());
-                            } else {
-                                statusLabel.setText("Invalid account number.");
-                            }
-                        }
-                    });
-                    depositThread.start();
+                    if (accountNum == 1) {
+                        pendingTransactions.add(() -> account1.deposit(amount));
+                        statusLabel.setText("Pending: Deposit $" + amount + " to Account 1");
+                    } else if (accountNum == 2) {
+                        pendingTransactions.add(() -> account2.deposit(amount));
+                        statusLabel.setText("Pending: Deposit $" + amount + " to Account 2");
+                    } else if (accountNum == 3) {
+                        pendingTransactions.add(() -> account3.deposit(amount));
+                        statusLabel.setText("Pending: Deposit $" + amount + " to Account 3");
+                    } else {
+                        statusLabel.setText("Invalid account number.");
+                    }
                 } catch (NumberFormatException ex) {
                     statusLabel.setText("Please enter a valid number.");
                 }
             }
         });
 
-        // Add action listener for withdraw
+        // Add action listener for withdraw (add to pending)
         withdrawButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 try {
                     int accountNum = Integer.parseInt(accountField.getText());
                     int amount = Integer.parseInt(amountField.getText());
 
-                    Thread withdrawThread = new Thread(new Runnable() {
-                        public void run() {
-                            if (accountNum == 1) {
-                                account1.withdraw(amount);
-                                statusLabel.setText("Withdrew $" + amount + " from Account 1. Current balance: $"
-                                        + account1.getBalance());
-                            } else if (accountNum == 2) {
-                                account2.withdraw(amount);
-                                statusLabel.setText("Withdrew $" + amount + " from Account 2. Current balance: $"
-                                        + account2.getBalance());
-                            } else if (accountNum == 3) {
-                                account3.withdraw(amount);
-                                statusLabel.setText("Withdrew $" + amount + " from Account 3. Current balance: $"
-                                        + account3.getBalance());
-                            } else {
-                                statusLabel.setText("Invalid account number.");
-                            }
-                        }
-                    });
-                    withdrawThread.start();
+                    if (accountNum == 1) {
+                        pendingTransactions.add(() -> account1.withdraw(amount));
+                        statusLabel.setText("Pending: Withdraw $" + amount + " from Account 1");
+                    } else if (accountNum == 2) {
+                        pendingTransactions.add(() -> account2.withdraw(amount));
+                        statusLabel.setText("Pending: Withdraw $" + amount + " from Account 2");
+                    } else if (accountNum == 3) {
+                        pendingTransactions.add(() -> account3.withdraw(amount));
+                        statusLabel.setText("Pending: Withdraw $" + amount + " from Account 3");
+                    } else {
+                        statusLabel.setText("Invalid account number.");
+                    }
                 } catch (NumberFormatException ex) {
                     statusLabel.setText("Please enter a valid number.");
                 }
+            }
+        });
+
+        // Add action listener for confirm (execute all pending transactions)
+        confirmButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                Thread confirmThread = new Thread(new Runnable() {
+                    public void run() {
+                        for (Runnable transaction : pendingTransactions) {
+                            transaction.run(); // Execute each pending transaction
+                        }
+                        pendingTransactions.clear(); // Clear all pending transactions after execution
+                        statusLabel.setText("All transactions executed.");
+                    }
+                });
+                confirmThread.start();
             }
         });
 
@@ -150,13 +157,15 @@ class BankAccount {
         this.balance = initialBalance;
     }
 
-    public void deposit(int amount) {
+    // Synchronized deposit method to prevent race conditions
+    public synchronized void deposit(int amount) {
         System.out.println("Depositing $" + amount);
         balance += amount;
         System.out.println("Deposit complete. New balance: $" + balance);
     }
 
-    public void withdraw(int amount) {
+    // Synchronized withdraw method to prevent race conditions
+    public synchronized void withdraw(int amount) {
         if (balance >= amount) {
             System.out.println("Withdrawing $" + amount);
             balance -= amount;
@@ -166,7 +175,8 @@ class BankAccount {
         }
     }
 
-    public  int getBalance() {
+    // To get balance
+    public synchronized int getBalance() {
         return balance;
     }
 }
