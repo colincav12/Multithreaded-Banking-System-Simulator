@@ -1,3 +1,4 @@
+//Adding this comment to fix a typo in last commit message. It is meant to say "Phase 2" instead of "Phase 3"
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
