@@ -1,4 +1,3 @@
-//Adding this comment to fix a typo in last commit message. It is meant to say "Phase 2" instead of "Phase 3"
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -13,7 +12,7 @@ public class BankingSystemSimulator {
         frame.setSize(500, 400);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(9, 2));
+        panel.setLayout(new GridLayout(10, 2));
 
         // Create labels and input fields
         JLabel accountLabel = new JLabel("Select Account (1, 2, or 3):");
@@ -27,6 +26,7 @@ public class BankingSystemSimulator {
         JButton withdrawButton = new JButton("Add Withdraw to Pending");
         JButton confirmButton = new JButton("Confirm All Transactions");
         JButton balanceButton = new JButton("Check Balance");
+        JButton deadlockButton = new JButton("Simulate Deadlock");
 
         // Message display
         JLabel statusLabel = new JLabel("Status: Waiting for action...");
@@ -40,6 +40,7 @@ public class BankingSystemSimulator {
         panel.add(withdrawButton);
         panel.add(confirmButton);
         panel.add(balanceButton);
+        panel.add(deadlockButton);
         panel.add(statusLabel);
 
         // Add panel to frame
@@ -145,8 +146,48 @@ public class BankingSystemSimulator {
             }
         });
 
+        // Add action listener for deadlock simulation
+        deadlockButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                simulateDeadlock(account1, account2);
+            }
+        });
+
         // Make frame visible
         frame.setVisible(true);
+    }
+
+    // Simulate a deadlock scenario by having two threads attempt to lock both
+    // accounts
+    private static void simulateDeadlock(BankAccount account1, BankAccount account2) {
+        Runnable task1 = () -> {
+            synchronized (account1) {
+                System.out.println("Thread 1 locked Account 1");
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                }
+                synchronized (account2) {
+                    System.out.println("Thread 1 locked Account 2");
+                }
+            }
+        };
+
+        Runnable task2 = () -> {
+            synchronized (account2) {
+                System.out.println("Thread 2 locked Account 2");
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                }
+                synchronized (account1) {
+                    System.out.println("Thread 2 locked Account 1");
+                }
+            }
+        };
+
+        new Thread(task1).start();
+        new Thread(task2).start();
     }
 }
 
