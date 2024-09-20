@@ -157,35 +157,61 @@ public class BankingSystemSimulator {
         frame.setVisible(true);
     }
 
-    // Simulate a deadlock scenario by having two threads attempt to lock both
-    // accounts
+    // Simulate a deadlock scenario using mutex locks to resolve
+    private static final Object lock1 = new Object();
+    private static final Object lock2 = new Object();  
     private static void simulateDeadlock(BankAccount account1, BankAccount account2) {
         Runnable task1 = () -> {
-            synchronized (account1) {
-                System.out.println("Thread 1 locked Account 1");
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
+            synchronized (lock1) {  
+                synchronized (account1) {
+                    System.out.println("Thread 1 locked Account 1");
+                    try {
+                        Thread.sleep(100);  
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
                 }
+                System.out.println("Thread 1 unlocked Account 1, ready to lock Account 2");
+            }
+    
+            synchronized (lock2) {
                 synchronized (account2) {
                     System.out.println("Thread 1 locked Account 2");
+                    try {
+                        Thread.sleep(100);  
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
                 }
+                System.out.println("Thread 1 unlocked Account 2");
             }
         };
-
+    
         Runnable task2 = () -> {
-            synchronized (account2) {
-                System.out.println("Thread 2 locked Account 2");
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
+            synchronized (lock2) {  
+                synchronized (account2) {
+                    System.out.println("Thread 2 locked Account 2");
+                    try {
+                        Thread.sleep(100);  
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
                 }
+                System.out.println("Thread 2 unlocked Account 2, ready to lock Account 1");
+            }
+    
+            synchronized (lock1) {
                 synchronized (account1) {
                     System.out.println("Thread 2 locked Account 1");
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
                 }
+                System.out.println("Thread 2 unlocked Account 1");
             }
         };
-
         new Thread(task1).start();
         new Thread(task2).start();
     }
